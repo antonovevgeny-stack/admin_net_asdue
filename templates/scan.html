@@ -4,257 +4,734 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Сканирование сети - АСДУЕ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
         
-        .header { background: #2c3e50; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .header h1 { font-size: 24px; }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            border-radius: 15px;
+        }
         
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #3498db; text-decoration: none; margin-right: 15px; }
-        .nav a:hover { text-decoration: underline; }
+        .card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
         
-        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            transition: all 0.3s;
+        }
         
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px; }
-        .btn-start { background: #27ae60; color: white; }
-        .btn-stop { background: #e74c3c; color: white; }
-        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
         
-        .progress-container { margin: 20px 0; }
-        .progress-bar { width: 100%; height: 30px; background: #ecf0f1; border-radius: 15px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #3498db; width: 0%; transition: width 0.5s ease; }
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+        }
         
-        .status-box { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        .status-item { margin: 5px 0; }
-        .status-label { font-weight: bold; color: #2c3e50; }
+        .btn-warning {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border: none;
+        }
         
-        .networks-list { margin-top: 20px; }
-        .network-item { padding: 10px; background: #f8f9fa; margin: 5px 0; border-left: 4px solid #3498db; }
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
         
-        .live-results { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
-        .host-item { padding: 8px; border-bottom: 1px solid #eee; }
-        .host-ip { font-weight: bold; color: #2c3e50; }
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #667eea;
+            color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .progress {
+            height: 20px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        /* Стили для окна логов */
+        .log-container {
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            border-radius: 15px;
+            margin-top: 30px;
+            font-family: 'Courier New', monospace;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .log-header {
+            background: rgba(0, 50, 0, 0.8);
+            padding: 12px 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+        }
+        
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .log-timestamp {
+            color: #888;
+            font-size: 0.8em;
+            min-width: 70px;
+            margin-right: 10px;
+            opacity: 0.8;
+        }
+        
+        .log-message {
+            flex: 1;
+        }
+        
+        .log-entry.info .log-message { color: #00ff00; }
+        .log-entry.success .log-message { color: #00ff00; font-weight: bold; }
+        .log-entry.warning .log-message { color: #ffff00; }
+        .log-entry.error .log-message { color: #ff5555; }
+        
+        .log-entry.info::before { content: "🛈 "; }
+        .log-entry.success::before { content: "✓ "; }
+        .log-entry.warning::before { content: "⚠ "; }
+        .log-entry.error::before { content: "✗ "; }
+        
+        .network-textarea {
+            background: rgba(0, 0, 0, 0.3) !important;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .status-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        
+        .status-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .loading-spinner {
+            display: none;
+            color: #667eea;
+        }
+        
+        .scanning-active .loading-spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-link {
+            color: #e0e0e0 !important;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: #667eea !important;
+        }
+        
+        /* Стили для скроллбара в логах */
+        .log-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        .log-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        .log-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 0, 0.5);
+        }
+        
+        .host-badge {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>АСДУЕ - Сканирование сети</h1>
-            <p>Обнаружение устройств в локальной сети</p>
-        </div>
-        
-        <div class="nav">
-            <a href="/">← Главная</a> | 
-            <a href="/networks">Настроить сети</a> | 
-            <a href="/results">Результаты</a>
-        </div>
-        
-        <!-- Карта управления сканированием -->
-        <div class="card">
-            <h2>Управление сканированием</h2>
-            
-            <div style="margin: 20px 0;">
-                <button id="btnStart" class="btn btn-start" onclick="startScan()">▶ Начать сканирование</button>
-                <button id="btnStop" class="btn btn-stop" onclick="stopScan()" disabled>⏹ Остановить</button>
-            </div>
-            
-            <div class="progress-container">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>Прогресс сканирования</span>
-                    <span id="progressText">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Статус сканирования -->
-        <div class="card">
-            <h2>Статус сканирования</h2>
-            
-            <div class="status-box">
-                <div class="status-item">
-                    <span class="status-label">Состояние:</span>
-                    <span id="statusState">Ожидание запуска</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Текущая сеть:</span>
-                    <span id="currentNetwork">—</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Сетей отсканировано:</span>
-                    <span id="networksScanned">0 / 0</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Найдено устройств:</span>
-                    <span id="hostsFound">0</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Время начала:</span>
-                    <span id="startTime">—</span>
-                </div>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-network-wired me-2"></i>
+                АСДУЕ - Сканирование сети
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/scan">
+                            <i class="fas fa-radar me-1"></i>Сканирование
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/networks">
+                            <i class="fas fa-list me-1"></i>Сети
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/results">
+                            <i class="fas fa-table me-1"></i>Результаты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/stats">
+                            <i class="fas fa-chart-bar me-1"></i>Статистика
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
-        
-        <!-- Список сетей для сканирования -->
-        <div class="card">
-            <h2>Сети для сканирования</h2>
-            
-            <div class="networks-list">
-                {% if networks %}
-                    {% for network in networks %}
-                    <div class="network-item">{{ network }}</div>
-                    {% endfor %}
-                {% else %}
-                    <p style="color: #e74c3c;">⚠ Нет сетей для сканирования. Добавьте сети на странице <a href="/networks">Настройка сетей</a>.</p>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Live результаты -->
-        <div class="card" id="resultsCard" style="display: none;">
-            <h2>Обнаруженные устройства (живые результаты)</h2>
-            
-            <div class="live-results" id="liveResults">
-                <!-- Здесь будут появляться найденные устройства -->
-            </div>
-        </div>
-        
-        <!-- Экспорт результатов -->
-        <div class="card">
-            <h2>Экспорт результатов</h2>
-            <p>После завершения сканирования вы можете выгрузить результаты:</p>
-            <div style="margin-top: 15px;">
-                <a href="/export/csv" id="exportCsv" style="padding: 10px 15px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">📊 CSV</a>
-                <a href="/export/docx" id="exportDocx" style="padding: 10px 15px; background: #3498db; color: white; text-decoration: none; border-radius: 5px;">📝 Word</a>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-radar me-2"></i>Сканирование сети
+                </h1>
+                
+                <!-- Блок статуса -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="status-card">
+                            <div class="text-muted small">Статус</div>
+                            <div class="status-value" id="scanStatus">
+                                {% if is_scanning %}Сканирование...{% else %}Готов{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="status-card">
+                            <div class="text-muted small">Прогресс</div>
+                            <div class="status-value" id="scanProgress">0%</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="status-card">
+                            <div class="text-muted small">Найдено устройств</div>
+                            <div class="status-value" id="hostsFound">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="status-card">
+                            <div class="text-muted small">Текущая сеть</div>
+                            <div class="status-value" id="currentNetwork">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Панель управления -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-play-circle me-2"></i>Управление сканированием
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-primary" onclick="startScan()" id="startBtn">
+                                <i class="fas fa-play me-1"></i>Запуск сканирования
+                            </button>
+                            <button class="btn btn-warning" onclick="stopScan()" id="stopBtn" disabled>
+                                <i class="fas fa-stop me-1"></i>Остановить
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearResults()">
+                                <i class="fas fa-trash me-1"></i>Очистить результаты
+                            </button>
+                            <span class="loading-spinner ms-2" id="loadingSpinner">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </div>
+                        
+                        <div class="progress mb-3">
+                            <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <span class="text-muted">Сетей в очереди:</span>
+                                    <span class="host-badge ms-2" id="networksCount">0</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="mb-2">
+                                    <span class="text-muted">Последнее сканирование:</span>
+                                    <span class="ms-2" id="lastScanTime">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ввод сетей -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-network-wired me-2"></i>Сети для сканирования
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-sitemap me-1"></i>Укажите сети в формате CIDR (по одной на строку):
+                            </label>
+                            <textarea class="form-control network-textarea" id="networkInput" rows="8" 
+                                      placeholder="Примеры:&#10;192.168.1.0/24&#10;10.0.0.0/24&#10;172.16.0.0/16&#10;192.168.100.0/28"></textarea>
+                            <div class="form-text text-muted mt-2">
+                                Каждая сеть должна быть указана с новой строки. Поддерживаются сети IPv4 с маской от 1 до 32.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success" onclick="saveNetworks()">
+                                <i class="fas fa-save me-1"></i>Сохранить сети
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="loadCurrentNetworks()">
+                                <i class="fas fa-download me-1"></i>Загрузить текущие
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="clearNetworks()">
+                                <i class="fas fa-broom me-1"></i>Очистить поле
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="loadExampleNetworks()">
+                                <i class="fas fa-lightbulb me-1"></i>Примеры сетей
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3 d-none" id="saveAlert" role="alert"></div>
+                    </div>
+                </div>
+                
+                <!-- Окно логов -->
+                <div class="log-container">
+                    <div class="log-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-terminal me-2"></i>Лог сканирования
+                        </h6>
+                        <div>
+                            <button class="btn btn-sm btn-outline-success me-2" onclick="refreshLogs()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="clearLogs()">
+                                <i class="fas fa-trash"></i> Очистить
+                            </button>
+                        </div>
+                    </div>
+                    <div class="log-content" id="scanLogs">
+                        <div class="log-entry info">
+                            <span class="log-timestamp" id="logTime">[{{ scan_data.start_time or '--:--:--' }}]</span>
+                            <span class="log-message">Система сканирования готова к работе. Добавьте сети и нажмите "Запуск".</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Глобальные переменные
+        let scanInterval;
+        let logInterval;
+        
+        // Функция запуска сканирования
+        function startScan() {
+            addLog('Запуск сканирования...', 'info');
+            
+            fetch('/api/scan/start', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog(data.message, 'success');
+                    updateScanStatus();
+                    startStatusPolling();
+                } else {
+                    addLog(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                addLog(`Ошибка соединения: ${error}`, 'error');
+            });
+        }
+        
+        // Функция остановки сканирования
+        function stopScan() {
+            addLog('Запрос на остановку сканирования...', 'warning');
+            
+            fetch('/api/scan/stop', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                addLog(data.message, 'info');
+            })
+            .catch(error => {
+                addLog(`Ошибка соединения: ${error}`, 'error');
+            });
+        }
+        
+        // Функция сохранения сетей
+        function saveNetworks() {
+            const networksText = document.getElementById('networkInput').value;
+            const networks = networksText.split('\n')
+                .map(net => net.trim())
+                .filter(net => net.length > 0);
+            
+            if (networks.length === 0) {
+                addLog('Ошибка: не указаны сети для сканирования', 'error');
+                showAlert('Укажите хотя бы одну сеть для сканирования', 'warning');
+                return;
+            }
+            
+            // Валидация формата CIDR
+            const invalidNetworks = [];
+            const validNetworks = [];
+            
+            networks.forEach(net => {
+                if (isValidCIDR(net)) {
+                    validNetworks.push(net);
+                } else {
+                    invalidNetworks.push(net);
+                }
+            });
+            
+            if (invalidNetworks.length > 0) {
+                const errorMsg = `Некорректный формат сетей (${invalidNetworks.length} шт.): ${invalidNetworks.join(', ')}`;
+                addLog(errorMsg, 'error');
+                showAlert(`Найдено ${invalidNetworks.length} некорректных сетей. Они не будут сохранены.`, 'warning');
+            }
+            
+            if (validNetworks.length === 0) {
+                addLog('Нет валидных сетей для сохранения', 'error');
+                showAlert('Нет валидных сетей для сохранения', 'danger');
+                return;
+            }
+            
+            addLog(`Сохранение ${validNetworks.length} сетей...`, 'info');
+            
+            fetch('/api/networks/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ networks: validNetworks })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const successMsg = `Сохранено ${data.saved_count} сетей для сканирования`;
+                    addLog(successMsg, 'success');
+                    showAlert(successMsg, 'success');
+                    updateNetworksCount();
+                } else {
+                    addLog(`Ошибка: ${data.message}`, 'error');
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                addLog(`Ошибка соединения: ${error}`, 'error');
+                showAlert('Ошибка соединения с сервером', 'danger');
+            });
+        }
+        
+        // Функция загрузки текущих сетей
+        function loadCurrentNetworks() {
+            fetch('/api/networks/list')
+            .then(response => response.json())
+            .then(data => {
+                if (data.networks && data.networks.length > 0) {
+                    document.getElementById('networkInput').value = data.networks.join('\n');
+                    addLog(`Загружено ${data.networks.length} текущих сетей`, 'info');
+                    showAlert(`Загружено ${data.networks.length} сетей`, 'info');
+                } else {
+                    addLog('Нет сохраненных сетей', 'warning');
+                    showAlert('Нет сохраненных сетей', 'warning');
+                }
+            })
+            .catch(error => {
+                addLog(`Ошибка загрузки сетей: ${error}`, 'error');
+            });
+        }
+        
+        // Загрузка примеров сетей
+        function loadExampleNetworks() {
+            const examples = [
+                '192.168.1.0/24',
+                '10.0.0.0/24',
+                '172.16.0.0/16',
+                '192.168.100.0/28',
+                '192.168.0.0/23',
+                '10.10.10.0/27'
+            ];
+            document.getElementById('networkInput').value = examples.join('\n');
+            addLog('Загружены примеры сетей', 'info');
+        }
+        
+        // Очистка поля сетей
+        function clearNetworks() {
+            document.getElementById('networkInput').value = '';
+            addLog('Поле сетей очищено', 'info');
+        }
+        
+        // Валидация формата CIDR
+        function isValidCIDR(network) {
+            const cidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
+            if (!cidrRegex.test(network)) return false;
+            
+            // Проверка диапазонов
+            const [ip, prefix] = network.split('/');
+            const prefixNum = parseInt(prefix);
+            if (prefixNum < 1 || prefixNum > 32) return false;
+            
+            // Проверка октетов IP
+            const octets = ip.split('.');
+            for (let octet of octets) {
+                const num = parseInt(octet);
+                if (num < 0 || num > 255) return false;
+            }
+            
+            return true;
+        }
+        
+        // Добавление записи в лог
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('scanLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            // Автопрокрутка к последней записи
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Очистка логов
+        function clearLogs() {
+            document.getElementById('scanLogs').innerHTML = '';
+            addLog('Логи очищены', 'info');
+        }
+        
+        // Обновление логов
+        function refreshLogs() {
+            fetch('/api/scan/logs')
+            .then(response => response.json())
+            .then(data => {
+                const logContainer = document.getElementById('scanLogs');
+                logContainer.innerHTML = '';
+                
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(log => {
+                        const logEntry = document.createElement('div');
+                        logEntry.className = `log-entry ${log.type}`;
+                        logEntry.innerHTML = `
+                            <span class="log-timestamp">[${log.timestamp}]</span>
+                            <span class="log-message">${log.message}</span>
+                        `;
+                        logContainer.appendChild(logEntry);
+                    });
+                } else {
+                    addLog('Логи отсутствуют', 'info');
+                }
+                
+                // Автопрокрутка
+                logContainer.scrollTop = logContainer.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки логов:', error);
+            });
+        }
+        
+        // Показать алерт
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.getElementById('saveAlert');
+            alertDiv.className = `alert alert-${type} mt-3`;
+            alertDiv.textContent = message;
+            alertDiv.classList.remove('d-none');
+            
+            // Скрыть через 5 секунд
+            setTimeout(() => {
+                alertDiv.classList.add('d-none');
+            }, 5000);
+        }
+        
         // Обновление статуса сканирования
         function updateScanStatus() {
             fetch('/api/scan/status')
-                .then(response => response.json())
-                .then(data => {
-                    // Обновляем прогресс
-                    const progress = data.progress || 0;
-                    document.getElementById('progressFill').style.width = progress + '%';
-                    document.getElementById('progressText').textContent = progress + '%';
-                    
-                    // Обновляем статус
-                    document.getElementById('statusState').textContent = 
-                        data.is_scanning ? 'Сканирование выполняется' : 'Ожидание';
-                    document.getElementById('statusState').style.color = 
-                        data.is_scanning ? '#27ae60' : '#e74c3c';
-                    
-                    // Обновляем информацию о сетях
-                    document.getElementById('currentNetwork').textContent = 
-                        data.current_network || '—';
-                    document.getElementById('networksScanned').textContent = 
-                        `${data.scanned_networks || 0} / ${data.total_networks || 0}`;
-                    document.getElementById('hostsFound').textContent = 
-                        data.hosts_found || 0;
-                    document.getElementById('startTime').textContent = 
-                        data.start_time || '—';
-                    
-                    // Обновляем состояние кнопок
-                    document.getElementById('btnStart').disabled = data.is_scanning;
-                    document.getElementById('btnStop').disabled = !data.is_scanning;
-                    
-                    // Показываем/скрываем карточку результатов
-                    if (data.results && data.results.length > 0) {
-                        document.getElementById('resultsCard').style.display = 'block';
-                        updateLiveResults(data.results);
-                    }
-                    
-                    // Включаем/выключаем кнопки экспорта
-                    const hasResults = data.results && data.results.length > 0;
-                    document.getElementById('exportCsv').style.opacity = hasResults ? '1' : '0.5';
-                    document.getElementById('exportDocx').style.opacity = hasResults ? '1' : '0.5';
-                    
-                    // Если сканирование идет, продолжаем обновлять
-                    if (data.is_scanning) {
-                        setTimeout(updateScanStatus, 1000);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка получения статуса:', error);
-                    // Пробуем снова через 2 секунды
-                    setTimeout(updateScanStatus, 2000);
-                });
+            .then(response => response.json())
+            .then(data => {
+                // Обновление статуса
+                document.getElementById('scanStatus').textContent = 
+                    data.is_scanning ? 'Сканирование...' : 'Готов';
+                
+                // Обновление прогресса
+                const progress = data.progress || 0;
+                document.getElementById('scanProgress').textContent = `${progress}%`;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                
+                // Обновление счетчиков
+                document.getElementById('hostsFound').textContent = data.hosts_found || 0;
+                document.getElementById('currentNetwork').textContent = data.current_network || '-';
+                document.getElementById('networksCount').textContent = data.total_networks || 0;
+                document.getElementById('lastScanTime').textContent = data.end_time || '-';
+                
+                // Обновление кнопок
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                
+                if (data.is_scanning) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    document.body.classList.add('scanning-active');
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    document.body.classList.remove('scanning-active');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка обновления статуса:', error);
+            });
         }
         
-        // Обновление живых результатов
-        function updateLiveResults(results) {
-            const container = document.getElementById('liveResults');
-            if (!container) return;
-            
-            // Показываем только последние 10 устройств
-            const recentResults = results.slice(-10);
-            
-            container.innerHTML = recentResults.map(host => `
-                <div class="host-item">
-                    <span class="host-ip">${host.ip}</span> - 
-                    ${host.hostname || 'Без имени'} | 
-                    MAC: ${host.mac} | 
-                    Производитель: ${host.vendor} |
-                    ОС: ${host.os || 'Не определена'}
-                </div>
-            `).join('');
+        // Обновление счетчика сетей
+        function updateNetworksCount() {
+            fetch('/api/networks/list')
+            .then(response => response.json())
+            .then(data => {
+                const count = data.networks ? data.networks.length : 0;
+                document.getElementById('networksCount').textContent = count;
+            });
         }
         
-        // Запуск сканирования
-        function startScan() {
-            fetch('/api/scan/start', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Начинаем обновление статуса
-                        updateScanStatus();
-                        alert('Сканирование запущено!');
-                    } else {
-                        alert('Ошибка: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка запуска сканирования:', error);
-                    alert('Ошибка запуска сканирования');
-                });
+        // Запуск периодического обновления статуса
+        function startStatusPolling() {
+            if (scanInterval) clearInterval(scanInterval);
+            scanInterval = setInterval(updateScanStatus, 2000);
         }
         
-        // Остановка сканирования
-        function stopScan() {
-            if (!confirm('Вы уверены, что хотите остановить сканирование?')) return;
-            
-            fetch('/api/scan/stop', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert('Сканирование останавливается...');
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка остановки сканирования:', error);
-                });
+        // Запуск периодического обновления логов
+        function startLogPolling() {
+            if (logInterval) clearInterval(logInterval);
+            logInterval = setInterval(refreshLogs, 3000);
         }
         
-        // Запускаем обновление статуса при загрузке страницы
+        // Очистка результатов
+        function clearResults() {
+            if (confirm('Вы уверены, что хотите очистить все результаты сканирования?')) {
+                addLog('Очистка результатов сканирования...', 'warning');
+                // Здесь можно добавить API для очистки результатов
+                // fetch('/api/results/clear', { method: 'POST' })
+                // .then(() => {
+                //     addLog('Результаты очищены', 'success');
+                //     updateScanStatus();
+                // });
+                addLog('Функция очистки результатов в разработке', 'info');
+            }
+        }
+        
+        // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            updateScanStatus();
+            // Загружаем текущие сети
+            loadCurrentNetworks();
             
-            // Проверяем доступность nmap
-            fetch('/health')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status !== 'healthy') {
-                        console.warn('Сервис может работать некорректно');
-                    }
-                });
+            // Обновляем статус
+            updateScanStatus();
+            updateNetworksCount();
+            
+            // Запускаем периодическое обновление
+            startStatusPolling();
+            startLogPolling();
+            
+            // Приветственное сообщение
+            setTimeout(() => {
+                addLog('Добро пожаловать в систему сканирования сети АСДУЕ!', 'success');
+                addLog('Для начала работы добавьте сети в формате CIDR и нажмите "Сохранить сети"', 'info');
+            }, 1000);
         });
     </script>
 </body>

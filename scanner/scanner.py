@@ -11,6 +11,8 @@ import threading
 import time
 from datetime import datetime
 import ipaddress
+import logging
+import sys
 
 class NetworkScanner:
     def __init__(self):
@@ -20,6 +22,32 @@ class NetworkScanner:
         self.progress = 0
         self.current_network = ""
         self.scanned_hosts = 0
+        
+        # Настройка логирования
+        self.setup_logging()
+    
+    def setup_logging(self):
+        """Настройка системы логирования"""
+        # Создаем логгер
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        
+        # Создаем обработчик для файла
+        file_handler = logging.FileHandler('logs/scanner.log', encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        
+        # Создаем обработчик для консоли
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        
+        # Форматтер
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
+        # Добавляем обработчики к логгеру
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
     
     def ping_host(self, ip):
         """Проверка доступности хоста через ping"""
@@ -71,7 +99,7 @@ class NetworkScanner:
                                 vendor = self.get_vendor_by_mac(mac)
                                 return mac.upper(), vendor
         except Exception as e:
-            print(f"ARP error for {ip}: {e}")
+            self.logger.error(f"ARP error for {ip}: {e}")
         
         return "Unknown", "Unknown"
     
@@ -104,6 +132,7 @@ class NetworkScanner:
     
     def scan_network_nmap(self, network):
         """Сканирование сети с помощью nmap"""
+        self.logger.info(f"Начало сканирования сети: {network}")
         print(f"[NMAP] Сканируем сеть: {network}")
         
         try:
@@ -113,13 +142,17 @@ class NetworkScanner:
             hosts = []
             for host in self.nm.all_hosts():
                 if self.nm[host].state() == 'up':
+                    self.logger.info(f"Найден активный хост: {host}")
                     host_info = self.get_host_details(host)
                     hosts.append(host_info)
             
+            self.logger.info(f"Сеть {network}: найдено {len(hosts)} устройств")
             return hosts
             
         except Exception as e:
-            print(f"Ошибка nmap для сети {network}: {e}")
+            error_msg = f"Ошибка nmap для сети {network}: {e}"
+            self.logger.error(error_msg)
+            print(error_msg)
             return []
     
     def get_host_details(self, ip):
@@ -140,11 +173,15 @@ class NetworkScanner:
             hostname = self.get_hostname(ip)
             if hostname:
                 host_info['hostname'] = hostname
+                self.logger.info(f"Хост {ip}: имя хоста = {hostname}")
             
             # Получаем MAC и производителя
             mac, vendor = self.get_mac_vendor(ip)
             host_info['mac'] = mac
             host_info['vendor'] = vendor
+            
+            if mac != "Unknown":
+                self.logger.info(f"Хост {ip}: MAC = {mac}, производитель = {vendor}")
             
             # Быстрое сканирование портов и ОС
             try:
@@ -156,6 +193,7 @@ class NetworkScanner:
                         if self.nm[ip]['osmatch']:
                             os_info = self.nm[ip]['osmatch'][0]
                             host_info['os'] = f"{os_info['name']} (accuracy: {os_info['accuracy']}%)"
+                            self.logger.info(f"Хост {ip}: ОС = {host_info['os']}")
                     
                     # Открытые порты
                     if 'tcp' in self.nm[ip]:
@@ -166,17 +204,21 @@ class NetworkScanner:
                                 'state': port_info['state'],
                                 'service': port_info['name']
                             })
+                        
+                        if host_info['ports']:
+                            self.logger.info(f"Хост {ip}: найдено {len(host_info['ports'])} открытых портов")
             
             except Exception as e:
-                print(f"Детальное сканирование {ip} не удалось: {e}")
+                self.logger.warning(f"Детальное сканирование {ip} не удалось: {e}")
         
         except Exception as e:
-            print(f"Ошибка получения деталей для {ip}: {e}")
+            self.logger.error(f"Ошибка получения деталей для {ip}: {e}")
         
         return host_info
     
     def scan_network_simple(self, network_cidr):
         """Простое сканирование сети (без nmap, если он не работает)"""
+        self.logger.info(f"Начало простого сканирования: {network_cidr}")
         print(f"[SIMPLE] Сканируем сеть: {network_cidr}")
         
         hosts = []
@@ -194,7 +236,7 @@ class NetworkScanner:
                     break
                 
                 ip_str = str(ip)
-                print(f"  Проверка {ip_str}...", end='\r')
+                self.logger.debug(f"Проверка {ip_str}...")
                 
                 if self.ping_host(ip_str):
                     host_info = {
@@ -213,14 +255,18 @@ class NetworkScanner:
                     host_info['vendor'] = vendor
                     
                     hosts.append(host_info)
+                    self.logger.info(f"Найден хост: {ip_str}")
                     print(f"  ✓ Найден хост: {ip_str}")
                 
                 count += 1
                 time.sleep(0.1)  # Чтобы не перегружать сеть
         
         except Exception as e:
-            print(f"Ошибка простого сканирования: {e}")
+            error_msg = f"Ошибка простого сканирования: {e}"
+            self.logger.error(error_msg)
+            print(error_msg)
         
+        self.logger.info(f"Простое сканирование {network_cidr}: найдено {len(hosts)} устройств")
         return hosts
     
     def scan_network(self, network_cidr):
@@ -228,7 +274,9 @@ class NetworkScanner:
         try:
             return self.scan_network_nmap(network_cidr)
         except Exception as e:
-            print(f"nmap не сработал, используем простой метод: {e}")
+            error_msg = f"nmap не сработал, используем простой метод: {e}"
+            self.logger.warning(error_msg)
+            print(error_msg)
             return self.scan_network_simple(network_cidr)
 
 # Глобальный экземпляр сканера
