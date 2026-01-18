@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Настройка сетей - АСДУЕ</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .back-btn { margin-bottom: 20px; }
+        .form-group { margin: 15px 0; }
+        input[type="text"] { padding: 8px; width: 300px; }
+        button { padding: 8px 15px; background: #27ae60; color: white; border: none; cursor: pointer; }
+        .network-list { margin-top: 30px; }
+        .network-item { background: #ecf0f1; padding: 10px; margin: 5px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="back-btn">
+        <a href="/">← На главную</a>
+    </div>
+    
+    <h1>Настройка сетей для сканирования</h1>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Добавить подсеть (например, 192.168.1.0/24):</label><br>
+            <input type="text" name="network" placeholder="192.168.1.0/24">
+        </div>
+        <button type="submit">Добавить сеть</button>
+    </form>
+    
+    <div class="network-list">
+        <h3>Список сетей для сканирования:</h3>
+        {% if networks %}
+            {% for network in networks %}
+            <div class="network-item">{{ network }}</div>
+            {% endfor %}
+        {% else %}
+            <p>Сети не добавлены. Добавьте первую сеть выше.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

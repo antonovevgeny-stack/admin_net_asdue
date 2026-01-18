@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Результаты - АСДУЕ</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #2c3e50; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .no-data { padding: 20px; text-align: center; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div style="margin-bottom: 20px;">
+        <a href="/">← На главную</a> | 
+        <a href="/scan">Сканировать</a>
+    </div>
+    
+    <h1>Результаты сканирования</h1>
+    
+    {% if scan_count > 0 %}
+        <p>Найдено устройств: {{ scan_count }}</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>IP адрес</th>
+                    <th>Имя хоста</th>
+                    <th>MAC адрес</th>
+                    <th>Производитель</th>
+                    <th>ОС</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for host in results %}
+                <tr>
+                    <td>{{ host.ip }}</td>
+                    <td>{{ host.hostnames[0] if host.hostnames else 'N/A' }}</td>
+                    <td>{{ host.mac }}</td>
+                    <td>{{ host.vendor }}</td>
+                    <td>{{ host.os }}</td>
+                    <td>{{ host.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="no-data">
+            <h3>Нет данных для отображения</h3>
+            <p>Запустите сканирование сети на странице <a href="/scan">Сканирование</a></p>
+        </div>
+    {% endif %}
+</body>
+</html>
