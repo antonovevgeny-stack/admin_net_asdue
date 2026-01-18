@@ -12,6 +12,7 @@ from datetime import datetime
 import csv
 from docx import Document
 from scanner import scanner
+import ipaddress
 
 app = Flask(__name__)
 
@@ -33,7 +34,8 @@ scan_data = {
     'results': [],
     'start_time': None,
     'end_time': None,
-    'scan_thread': None
+    'scan_thread': None,
+    'logs': []
 }
 
 @app.route('/')
@@ -133,6 +135,11 @@ def api_start_scan():
     if scan_data['is_scanning']:
         return jsonify({'status': 'error', 'message': 'Сканирование уже выполняется'})
     
+    # Проверяем, есть ли сети для сканирования
+    networks_list = load_networks()
+    if not networks_list:
+        return jsonify({'status': 'error', 'message': 'Нет сетей для сканирования'})
+    
     scan_thread = threading.Thread(target=start_scanning, daemon=True)
     scan_thread.start()
     scan_data['scan_thread'] = scan_thread
@@ -144,6 +151,48 @@ def api_stop_scan():
     """API для остановки сканирования"""
     scan_data['is_scanning'] = False
     return jsonify({'status': 'success', 'message': 'Сканирование останавливается'})
+
+@app.route('/api/networks/save', methods=['POST'])
+def save_networks_api():
+    """API для сохранения списка сетей"""
+    try:
+        data = request.get_json()
+        networks = data.get('networks', [])
+        
+        # Базовая валидация
+        valid_networks = []
+        invalid_networks = []
+        
+        for network in networks:
+            if validate_network(network):
+                valid_networks.append(network)
+            else:
+                invalid_networks.append(network)
+        
+        if invalid_networks:
+            print(f"Некорректные сети: {invalid_networks}")
+        
+        save_networks(valid_networks)
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Сохранено {len(valid_networks)} сетей',
+            'saved_count': len(valid_networks),
+            'invalid_networks': invalid_networks
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/networks/list', methods=['GET'])
+def list_networks_api():
+    """API для получения списка сетей"""
+    networks = load_networks()
+    return jsonify({'networks': networks})
+
+@app.route('/api/scan/logs', methods=['GET'])
+def get_scan_logs():
+    """API для получения логов сканирования"""
+    return jsonify({'logs': scan_data.get('logs', [])})
 
 @app.route('/results')
 def results():
@@ -274,6 +323,28 @@ def save_networks(networks):
     with open(app.config['NETWORKS_FILE'], 'w') as f:
         json.dump(networks, f, indent=2)
 
+def validate_network(network_str):
+    """Проверка корректности формата сети CIDR"""
+    try:
+        ipaddress.ip_network(network_str, strict=False)
+        return True
+    except:
+        return False
+
+def add_scan_log(message, log_type='info'):
+    """Добавление записи в логи сканирования"""
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    log_entry = {
+        'timestamp': timestamp,
+        'message': message,
+        'type': log_type
+    }
+    scan_data['logs'].append(log_entry)
+    
+    # Ограничиваем количество логов (последние 100)
+    if len(scan_data['logs']) > 100:
+        scan_data['logs'] = scan_data['logs'][-100:]
+
 def start_scanning():
     """Функция запуска сканирования (работает в отдельном потоке)"""
     global scan_data
@@ -286,16 +357,21 @@ def start_scanning():
     scan_data['start_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     scan_data['end_time'] = None
     scan_data['hosts_found'] = 0
+    scan_data['logs'] = []
     
     networks_list = load_networks()
     scan_data['total_networks'] = len(networks_list)
     scan_data['scanned_networks'] = 0
     
+    add_scan_log('Начинаем сканирование...', 'info')
+    
     if not networks_list:
+        add_scan_log('Нет сетей для сканирования!', 'error')
         print("Нет сетей для сканирования!")
         scan_data['is_scanning'] = False
         return
     
+    add_scan_log(f'Начинаем сканирование {len(networks_list)} сетей...', 'info')
     print(f"Начинаем сканирование {len(networks_list)} сетей...")
     
     # Сканируем каждую сеть
@@ -303,6 +379,7 @@ def start_scanning():
     
     for i, network in enumerate(networks_list):
         if not scan_data['is_scanning']:
+            add_scan_log('Сканирование прервано пользователем', 'warning')
             print("Сканирование прервано пользователем")
             break
         
@@ -310,7 +387,9 @@ def start_scanning():
         scan_data['scanned_networks'] = i + 1
         scan_data['progress'] = int((i + 1) / len(networks_list) * 100)
         
-        print(f"Сканируем сеть {i+1}/{len(networks_list)}: {network}")
+        log_msg = f"Сканируем сеть {i+1}/{len(networks_list)}: {network}"
+        add_scan_log(log_msg, 'info')
+        print(log_msg)
         
         try:
             # Используем наш сканер
@@ -321,10 +400,15 @@ def start_scanning():
             scan_data['results'] = all_results
             scan_data['hosts_found'] = len(all_results)
             
+            add_scan_log(f"Найдено устройств в сети {network}: {len(network_results)}", 'success')
+            add_scan_log(f"Всего найдено: {len(all_results)} устройств", 'info')
+            
             print(f"  Найдено устройств в этой сети: {len(network_results)}")
             print(f"  Всего найдено: {len(all_results)} устройств")
             
         except Exception as e:
+            error_msg = f"Ошибка при сканировании сети {network}: {e}"
+            add_scan_log(error_msg, 'error')
             print(f"Ошибка при сканировании сети {network}: {e}")
         
         # Небольшая пауза между сетями
@@ -336,7 +420,9 @@ def start_scanning():
     scan_data['end_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     scan_data['progress'] = 100
     
-    print(f"Сканирование завершено! Найдено устройств: {len(all_results)}")
+    completion_msg = f"Сканирование завершено! Найдено устройств: {len(all_results)}"
+    add_scan_log(completion_msg, 'success')
+    print(completion_msg)
     
     # Сохраняем результаты в файл
     if all_results:
@@ -354,8 +440,12 @@ def save_results_to_file(results):
                 'total_hosts': len(results),
                 'hosts': results
             }, f, indent=2, default=str)
+        
+        add_scan_log(f"Результаты сохранены в {filepath}", 'info')
         print(f"Результаты сохранены в {filepath}")
     except Exception as e:
+        error_msg = f"Ошибка сохранения результатов: {e}"
+        add_scan_log(error_msg, 'error')
         print(f"Ошибка сохранения результатов: {e}")
 
 if __name__ == '__main__':
@@ -372,11 +462,6 @@ if __name__ == '__main__':
     print("Проверьте настройки:")
     print(f"  - networks.json содержит {len(load_networks())} сетей")
     print(f"  - nmap доступен: {'Да' if os.system('which nmap > /dev/null 2>&1') == 0 else 'Нет'}")
-    print("")
-    print("Для запуска сканирования:")
-    print("  1. Откройте http://localhost:5000")
-    print("  2. Нажмите 'Сканирование сети'")
-    print("  3. Нажмите 'Начать сканирование'")
     print("=" * 60)
     
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(debug=True, host='0.0.0.0')
