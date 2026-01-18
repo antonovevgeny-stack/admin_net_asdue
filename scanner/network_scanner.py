@@ -1,0 +1,1 @@
+#!/usr/bin/env python3\n"""\nМодуль сканирования сети\n"""\n\nimport nmap\nimport socket\nfrom datetime import datetime\n\nclass NetworkScanner:\n    def __init__(self):\n        self.nm = nmap.PortScanner()\n    \n    def scan_network(self, network_cidr):\n        """Сканирование сети"""\n        print(f"[{datetime.now()}] Сканирование сети: {network_cidr}")\n        return []\n
