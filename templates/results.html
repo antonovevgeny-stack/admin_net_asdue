@@ -2,56 +2,488 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Результаты - АСДУЕ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты сканирования - АСДУЕ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: Arial; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #2c3e50; color: white; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .no-data { padding: 20px; text-align: center; background: #f8f9fa; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table-dark {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+        }
+        
+        .table-dark th {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+        
+        .table-dark td {
+            border-color: rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+        
+        .badge-online {
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            color: white;
+        }
+        
+        .badge-offline {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+        
+        .nav-link {
+            color: #e0e0e0 !important;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: #667eea !important;
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stats-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stats-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .host-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+        
+        .vendor-badge {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .os-badge {
+            background: rgba(13, 202, 240, 0.2);
+            color: #0dcaf0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+        
+        .no-results i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        
+        /* Стили для скроллбара */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.8);
+        }
+        
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.9em;
+            }
+            
+            .stats-card {
+                padding: 10px;
+            }
+            
+            .stats-value {
+                font-size: 1.2em;
+            }
+        }
     </style>
 </head>
 <body>
-    <div style="margin-bottom: 20px;">
-        <a href="/">← На главную</a> | 
-        <a href="/scan">Сканировать</a>
-    </div>
-    
-    <h1>Результаты сканирования</h1>
-    
-    {% if scan_count > 0 %}
-        <p>Найдено устройств: {{ scan_count }}</p>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>IP адрес</th>
-                    <th>Имя хоста</th>
-                    <th>MAC адрес</th>
-                    <th>Производитель</th>
-                    <th>ОС</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for host in results %}
-                <tr>
-                    <td>{{ host.ip }}</td>
-                    <td>{{ host.hostnames[0] if host.hostnames else 'N/A' }}</td>
-                    <td>{{ host.mac }}</td>
-                    <td>{{ host.vendor }}</td>
-                    <td>{{ host.os }}</td>
-                    <td>{{ host.status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <div class="no-data">
-            <h3>Нет данных для отображения</h3>
-            <p>Запустите сканирование сети на странице <a href="/scan">Сканирование</a></p>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-network-wired me-2"></i>
+                АСДУЕ - Результаты сканирования
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scan">
+                            <i class="fas fa-radar me-1"></i>Сканирование
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/networks">
+                            <i class="fas fa-list me-1"></i>Сети
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/results">
+                            <i class="fas fa-table me-1"></i>Результаты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/stats">
+                            <i class="fas fa-chart-bar me-1"></i>Статистика
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
-    {% endif %}
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">
+            <i class="fas fa-table me-2"></i>Результаты сканирования
+        </h1>
+        
+        <!-- Статистика -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="text-muted small">Всего устройств</div>
+                    <div class="stats-value">{{ hosts_count }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="text-muted small">Последнее сканирование</div>
+                    <div class="stats-value">
+                        {% if last_scan %}
+                            {{ last_scan }}
+                        {% else %}
+                            Нет данных
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="text-muted small">Активных устройств</div>
+                    <div class="stats-value">
+                        {% if results %}
+                            {{ results|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="text-muted small">Экспорт результатов</div>
+                    <div class="d-flex gap-2">
+                        <a href="/export/csv" class="btn btn-sm btn-export">
+                            <i class="fas fa-file-csv me-1"></i>CSV
+                        </a>
+                        <a href="/export/docx" class="btn btn-sm btn-export">
+                            <i class="fas fa-file-word me-1"></i>Word
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Таблица результатов -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>Обнаруженные устройства
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if results and results|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-desktop"></i></th>
+                                    <th>IP адрес</th>
+                                    <th>Имя хоста</th>
+                                    <th>MAC адрес</th>
+                                    <th>Производитель</th>
+                                    <th>ОС</th>
+                                    <th>Статус</th>
+                                    <th>Порты</th>
+                                    <th>Время обнаружения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for host in results %}
+                                <tr>
+                                    <td>
+                                        <div class="host-icon">
+                                            <i class="fas fa-desktop"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ host.ip }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if host.hostname %}
+                                            <span class="text-info">{{ host.hostname }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Не определено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if host.mac and host.mac != 'Unknown' %}
+                                            <code>{{ host.mac }}</code>
+                                        {% else %}
+                                            <span class="text-muted">Не определен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if host.vendor and host.vendor != 'Unknown' %}
+                                            <span class="vendor-badge">{{ host.vendor }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Не определен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if host.os and host.os != 'Unknown' %}
+                                            <span class="os-badge">{{ host.os|truncate(30) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Не определена</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-online">Online</span>
+                                    </td>
+                                    <td>
+                                        {% if host.ports and host.ports|length > 0 %}
+                                            <span class="badge bg-info">{{ host.ports|length }} порт(ов)</span>
+                                        {% else %}
+                                            <span class="text-muted">Нет данных</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ host.scan_time if host.scan_time else 'Не указано' }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Показано {{ results|length }} устройств
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <i class="fas fa-inbox"></i>
+                        <h4>Нет данных для отображения</h4>
+                        <p class="text-muted">Запустите сканирование сети, чтобы увидеть результаты.</p>
+                        <a href="/scan" class="btn btn-primary mt-3">
+                            <i class="fas fa-radar me-1"></i>Перейти к сканированию
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Информация о сканировании -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Информация о сканировании
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-calendar me-2 text-primary"></i>
+                                <strong>Последнее сканирование:</strong>
+                                <span class="float-end">
+                                    {% if last_scan %}
+                                        {{ last_scan }}
+                                    {% else %}
+                                        Не выполнялось
+                                    {% endif %}
+                                </span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-hashtag me-2 text-primary"></i>
+                                <strong>Всего устройств:</strong>
+                                <span class="float-end">{{ hosts_count }}</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-database me-2 text-primary"></i>
+                                <strong>Данные в памяти:</strong>
+                                <span class="float-end">
+                                    {% if results %}
+                                        {{ results|length }} записей
+                                    {% else %}
+                                        Нет данных
+                                    {% endif %}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-download me-2"></i>Экспорт данных
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Вы можете экспортировать результаты сканирования для дальнейшего анализа.
+                        </p>
+                        <div class="d-grid gap-2">
+                            <a href="/export/csv" class="btn btn-export" {% if not results or results|length == 0 %}disabled{% endif %}>
+                                <i class="fas fa-file-csv me-1"></i>Экспорт в CSV
+                                <small class="d-block">Для анализа в Excel/Google Sheets</small>
+                            </a>
+                            <a href="/export/docx" class="btn btn-export" {% if not results or results|length == 0 %}disabled{% endif %}>
+                                <i class="fas fa-file-word me-1"></i>Экспорт в Word
+                                <small class="d-block">Для создания отчетов</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Автоматическое обновление статуса
+        function updateResults() {
+            fetch('/api/scan/status')
+            .then(response => response.json())
+            .then(data => {
+                // Если количество устройств изменилось, перезагружаем страницу
+                const currentCount = parseInt(document.querySelector('.stats-value').textContent);
+                if (data.hosts_found !== currentCount) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Ошибка обновления:', error));
+        }
+        
+        // Обновляем каждые 10 секунд, если есть активное сканирование
+        setInterval(() => {
+            fetch('/api/scan/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_scanning) {
+                    updateResults();
+                }
+            });
+        }, 10000);
+        
+        // Подсветка строк при наведении
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('table tbody tr');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(5px)';
+                    this.style.transition = 'transform 0.2s';
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+        });
+    </script>
 </body>
 </html>

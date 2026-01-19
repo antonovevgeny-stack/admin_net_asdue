@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика - АСДУЕ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js для графиков -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .stats-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .stats-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stats-label {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .vendor-list, .os-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .vendor-item, .os-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .vendor-item:last-child, .os-item:last-child {
+            border-bottom: none;
+        }
+        
+        .vendor-name, .os-name {
+            flex: 1;
+        }
+        
+        .vendor-count, .os-count {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        
+        .nav-link {
+            color: #e0e0e0 !important;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: #667eea !important;
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+        
+        .no-data i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #444;
+        }
+        
+        .progress-bar-custom {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        .progress {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+            
+            .stats-value {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-network-wired me-2"></i>
+                АСДУЕ - Статистика
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scan">
+                            <i class="fas fa-radar me-1"></i>Сканирование
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/networks">
+                            <i class="fas fa-list me-1"></i>Сети
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/results">
+                            <i class="fas fa-table me-1"></i>Результаты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/stats">
+                            <i class="fas fa-chart-bar me-1"></i>Статистика
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>Статистика сети
+        </h1>
+        
+        {% if stats.total_hosts > 0 %}
+            <!-- Основная статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stats-value">{{ stats.total_hosts }}</div>
+                        <div class="stats-label">Всего устройств</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="stats-value">{{ stats.vendors|length }}</div>
+                        <div class="stats-label">Производителей</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <div class="stats-value">{{ stats.os_distribution|length }}</div>
+                        <div class="stats-label">Типов ОС</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stats-value">
+                            {% if stats.scan_history %}
+                                {{ stats.scan_history|length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <div class="stats-label">Сканирований</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- График производителей -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-industry me-2"></i>Распределение по производителям
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="vendorsChart"></canvas>
+                            </div>
+                            <div class="vendor-list">
+                                {% for vendor, count in stats.vendors.items()|sort(attribute='1', reverse=True) %}
+                                    <div class="vendor-item">
+                                        <div class="vendor-name">{{ vendor if vendor else 'Неизвестно' }}</div>
+                                        <div class="vendor-count">{{ count }}</div>
+                                        <div class="w-50">
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-custom" 
+                                                     style="width: {{ (count / stats.total_hosts * 100)|round(1) }}%">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted ms-2">{{ (count / stats.total_hosts * 100)|round(1) }}%</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- График операционных систем -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-laptop-code me-2"></i>Распределение по ОС
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="osChart"></canvas>
+                            </div>
+                            <div class="os-list">
+                                {% for os, count in stats.os_distribution.items()|sort(attribute='1', reverse=True) %}
+                                    <div class="os-item">
+                                        <div class="os-name">{{ os if os else 'Неизвестно' }}</div>
+                                        <div class="os-count">{{ count }}</div>
+                                        <div class="w-50">
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-custom" 
+                                                     style="width: {{ (count / stats.total_hosts * 100)|round(1) }}%">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted ms-2">{{ (count / stats.total_hosts * 100)|round(1) }}%</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Подробная статистика -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Детальная статистика
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-industry me-2"></i>Топ-5 производителей</h6>
+                                    <table class="table table-dark table-sm">
+                                        <tbody>
+                                            {% for vendor, count in stats.vendors.items()|sort(attribute='1', reverse=True)|slice(5) %}
+                                            <tr>
+                                                <td>{{ vendor if vendor else 'Неизвестно' }}</td>
+                                                <td class="text-end">{{ count }} устройств</td>
+                                                <td class="text-end">{{ (count / stats.total_hosts * 100)|round(1) }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-laptop me-2"></i>Топ-5 операционных систем</h6>
+                                    <table class="table table-dark table-sm">
+                                        <tbody>
+                                            {% for os, count in stats.os_distribution.items()|sort(attribute='1', reverse=True)|slice(5) %}
+                                            <tr>
+                                                <td>{{ os if os else 'Неизвестно' }}</td>
+                                                <td class="text-end">{{ count }} устройств</td>
+                                                <td class="text-end">{{ (count / stats.total_hosts * 100)|round(1) }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% else %}
+            <!-- Нет данных -->
+            <div class="no-data">
+                <i class="fas fa-chart-pie"></i>
+                <h4>Нет данных для статистики</h4>
+                <p class="text-muted">Запустите сканирование сети, чтобы собрать статистику.</p>
+                <a href="/scan" class="btn btn-primary mt-3">
+                    <i class="fas fa-radar me-1"></i>Перейти к сканированию
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        {% if stats.total_hosts > 0 %}
+        // Данные для графиков
+        const vendorsData = {
+            labels: [
+                {% for vendor, count in stats.vendors.items()|sort(attribute='1', reverse=True) %}
+                    "{{ vendor if vendor else 'Неизвестно' }}",
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for vendor, count in stats.vendors.items()|sort(attribute='1', reverse=True) %}
+                        {{ count }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#667eea', '#764ba2', '#f093fb', '#f5576c', '#f6d365', 
+                    '#fda085', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        const osData = {
+            labels: [
+                {% for os, count in stats.os_distribution.items()|sort(attribute='1', reverse=True) %}
+                    "{{ os if os else 'Неизвестно'|truncate(20) }}",
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for os, count in stats.os_distribution.items()|sort(attribute='1', reverse=True) %}
+                        {{ count }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
+                    '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        // Инициализация графиков
+        document.addEventListener('DOMContentLoaded', function() {
+            // График производителей
+            const vendorsCtx = document.getElementById('vendorsChart').getContext('2d');
+            new Chart(vendorsCtx, {
+                type: 'doughnut',
+                data: vendorsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // График операционных систем
+            const osCtx = document.getElementById('osChart').getContext('2d');
+            new Chart(osCtx, {
+                type: 'pie',
+                data: osData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        {% endif %}
+        
+        // Автоматическое обновление статистики
+        function updateStats() {
+            fetch('/api/scan/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.hosts_found !== {{ stats.total_hosts }}) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Ошибка обновления:', error));
+        }
+        
+        // Обновляем каждые 15 секунд, если есть активное сканирование
+        setInterval(() => {
+            fetch('/api/scan/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_scanning) {
+                    updateStats();
+                }
+            });
+        }, 15000);
+    </script>
+</body>
+</html>
