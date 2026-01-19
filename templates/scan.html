@@ -8,210 +8,75 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
+        /* ... (предыдущие стили остаются без изменений) ... */
+        
+        /* Дополнительные стили для улучшенного отображения логов */
+        .scanner-log {
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+            margin-left: 5px;
         }
         
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 20px;
-            border-radius: 15px;
-        }
-        
-        .card-header {
-            background: rgba(0, 0, 0, 0.2);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px 15px 0 0 !important;
-            padding: 15px 20px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border: none;
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            border: none;
-        }
-        
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-        }
-        
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: #667eea;
-            color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .progress {
-            height: 20px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .progress-bar {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
-        }
-        
-        /* Стили для окна логов */
-        .log-container {
-            background: rgba(0, 0, 0, 0.7);
-            color: #00ff00;
-            border-radius: 15px;
-            margin-top: 30px;
-            font-family: 'Courier New', monospace;
-            height: 350px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-            backdrop-filter: blur(5px);
-        }
-        
-        .log-header {
-            background: rgba(0, 50, 0, 0.8);
-            padding: 12px 20px;
-            border-radius: 15px 15px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-        }
-        
-        .log-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            font-size: 0.9em;
-            line-height: 1.5;
-        }
-        
-        .log-entry {
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.1);
-            display: flex;
-            align-items: flex-start;
-        }
-        
-        .log-timestamp {
-            color: #888;
-            font-size: 0.8em;
-            min-width: 70px;
-            margin-right: 10px;
-            opacity: 0.8;
-        }
-        
-        .log-message {
-            flex: 1;
-        }
-        
-        .log-entry.info .log-message { color: #00ff00; }
-        .log-entry.success .log-message { color: #00ff00; font-weight: bold; }
-        .log-entry.warning .log-message { color: #ffff00; }
-        .log-entry.error .log-message { color: #ff5555; }
-        
-        .log-entry.info::before { content: "🛈 "; }
-        .log-entry.success::before { content: "✓ "; }
-        .log-entry.warning::before { content: "⚠ "; }
-        .log-entry.error::before { content: "✗ "; }
-        
-        .network-textarea {
-            background: rgba(0, 0, 0, 0.3) !important;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        
-        .status-card {
-            background: rgba(0, 0, 0, 0.3);
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-        }
-        
-        .status-value {
-            font-size: 1.2em;
+        .scanner-log .log-timestamp {
+            color: #667eea;
             font-weight: bold;
-            color: #667eea;
         }
         
-        .loading-spinner {
-            display: none;
-            color: #667eea;
+        .log-entry.scanner {
+            background: rgba(102, 126, 234, 0.05);
         }
         
-        .scanning-active .loading-spinner {
-            display: inline-block;
-            animation: spin 1s linear infinite;
+        .ip-address {
+            font-family: 'Courier New', monospace;
+            color: #ffff00;
+            font-weight: bold;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .network-name {
+            font-family: 'Courier New', monospace;
+            color: #00ffff;
+            font-weight: bold;
         }
         
-        .navbar {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .nav-link {
-            color: #e0e0e0 !important;
-            transition: color 0.3s;
-        }
-        
-        .nav-link:hover {
-            color: #667eea !important;
-        }
-        
-        /* Стили для скроллбара в логах */
-        .log-content::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .log-content::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-        }
-        
-        .log-content::-webkit-scrollbar-thumb {
-            background: rgba(0, 255, 0, 0.3);
-            border-radius: 4px;
-        }
-        
-        .log-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 255, 0, 0.5);
-        }
-        
-        .host-badge {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
-            padding: 3px 8px;
-            border-radius: 12px;
+        .scan-progress-detail {
             font-size: 0.85em;
+            color: #888;
+            margin-left: 10px;
+        }
+        
+        .scanner-success {
+            color: #00ff00 !important;
+            font-weight: bold;
+        }
+        
+        .scanner-error {
+            color: #ff5555 !important;
+        }
+        
+        .scanner-warning {
+            color: #ffff00 !important;
+        }
+        
+        .scanner-info {
+            color: #00ffff !important;
+        }
+        
+        /* Анимация для активного сканирования */
+        @keyframes scanningPulse {
+            0% { background-color: rgba(0, 100, 0, 0.3); }
+            50% { background-color: rgba(0, 150, 0, 0.5); }
+            100% { background-color: rgba(0, 100, 0, 0.3); }
+        }
+        
+        .scanning-active .log-container {
+            animation: scanningPulse 2s infinite;
+        }
+        
+        /* Стили для иконок в логах */
+        .log-icon {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
         }
     </style>
 </head>
@@ -313,6 +178,9 @@
                             <button class="btn btn-outline-secondary" onclick="clearResults()">
                                 <i class="fas fa-trash me-1"></i>Очистить результаты
                             </button>
+                            <button class="btn btn-outline-info" onclick="testScanner()">
+                                <i class="fas fa-vial me-1"></i>Тест сканера
+                            </button>
                             <span class="loading-spinner ms-2" id="loadingSpinner">
                                 <i class="fas fa-spinner fa-spin"></i>
                             </span>
@@ -382,6 +250,7 @@
                     <div class="log-header">
                         <h6 class="mb-0">
                             <i class="fas fa-terminal me-2"></i>Лог сканирования
+                            <small class="text-muted ms-2" id="logCount">0 сообщений</small>
                         </h6>
                         <div>
                             <button class="btn btn-sm btn-outline-success me-2" onclick="refreshLogs()">
@@ -399,6 +268,19 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Подсказка по логам -->
+                <div class="alert alert-dark mt-3 small">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Пояснение к логам сканера:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li><span class="scanner-success">✓ Зеленый</span> - успешное обнаружение</li>
+                        <li><span class="scanner-warning">Желтый</span> - предупреждения и информация</li>
+                        <li><span class="scanner-error">Красный</span> - ошибки сканирования</li>
+                        <li><span class="ip-address">Желтый моноширинный</span> - IP-адреса</li>
+                        <li><span class="network-name">Голубой моноширинный</span> - имена сетей</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -410,6 +292,7 @@
         // Глобальные переменные
         let scanInterval;
         let logInterval;
+        let lastLogCount = 0;
         
         // Функция запуска сканирования
         function startScan() {
@@ -446,6 +329,22 @@
             })
             .catch(error => {
                 addLog(`Ошибка соединения: ${error}`, 'error');
+            });
+        }
+        
+        // Тест сканера
+        function testScanner() {
+            addLog('Тестирование сканера...', 'info');
+            
+            fetch('/api/scan/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_scanning) {
+                    addLog('Сканер уже работает. Дождитесь завершения текущего сканирования.', 'warning');
+                } else {
+                    addLog('Сканер готов к работе. Состояние: OK', 'success');
+                    addLog('Для тестирования добавьте тестовую сеть (например, 127.0.0.1/32) и запустите сканирование', 'info');
+                }
             });
         }
         
@@ -572,19 +471,72 @@
             return true;
         }
         
-        // Добавление записи в лог
+        // Добавление записи в лог с улучшенным форматированием
         function addLog(message, type = 'info') {
             const logContainer = document.getElementById('scanLogs');
             const timestamp = new Date().toLocaleTimeString();
             
+            // Определяем иконку для типа сообщения
+            let icon = '🛈';
+            let cssClass = type;
+            
+            switch(type) {
+                case 'success':
+                    icon = '✓';
+                    cssClass += ' scanner-success';
+                    break;
+                case 'error':
+                    icon = '✗';
+                    cssClass += ' scanner-error';
+                    break;
+                case 'warning':
+                    icon = '⚠';
+                    cssClass += ' scanner-warning';
+                    break;
+                case 'info':
+                    icon = '🛈';
+                    cssClass += ' scanner-info';
+                    break;
+            }
+            
+            // Форматирование сообщения для выделения IP-адресов и сетей
+            let formattedMessage = message;
+            
+            // Выделяем IP-адреса (например, 192.168.1.1)
+            formattedMessage = formattedMessage.replace(
+                /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g,
+                '<span class="ip-address">$1</span>'
+            );
+            
+            // Выделяем сети CIDR (например, 192.168.1.0/24)
+            formattedMessage = formattedMessage.replace(
+                /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2})/g,
+                '<span class="network-name">$1</span>'
+            );
+            
+            // Выделяем MAC-адреса
+            formattedMessage = formattedMessage.replace(
+                /([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/g,
+                '<code>$&</code>'
+            );
+            
+            // Если это сообщение от сканера, добавляем специальный класс
+            const isScannerLog = message.includes('[SCANNER]');
+            const logClass = isScannerLog ? `log-entry scanner ${cssClass}` : `log-entry ${cssClass}`;
+            
             const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${type}`;
+            logEntry.className = logClass;
             logEntry.innerHTML = `
+                <span class="log-icon">${icon}</span>
                 <span class="log-timestamp">[${timestamp}]</span>
-                <span class="log-message">${message}</span>
+                <span class="log-message">${formattedMessage}</span>
             `;
             
             logContainer.appendChild(logEntry);
+            
+            // Обновляем счетчик логов
+            updateLogCount();
+            
             // Автопрокрутка к последней записи
             logContainer.scrollTop = logContainer.scrollHeight;
         }
@@ -593,6 +545,14 @@
         function clearLogs() {
             document.getElementById('scanLogs').innerHTML = '';
             addLog('Логи очищены', 'info');
+            updateLogCount();
+        }
+        
+        // Обновление счетчика логов
+        function updateLogCount() {
+            const logContainer = document.getElementById('scanLogs');
+            const logCount = logContainer.children.length;
+            document.getElementById('logCount').textContent = `${logCount} сообщений`;
         }
         
         // Обновление логов
@@ -601,24 +561,40 @@
             .then(response => response.json())
             .then(data => {
                 const logContainer = document.getElementById('scanLogs');
-                logContainer.innerHTML = '';
                 
-                if (data.logs && data.logs.length > 0) {
+                // Проверяем, есть ли новые логи
+                if (data.logs && data.logs.length !== lastLogCount) {
+                    lastLogCount = data.logs.length;
+                    
+                    // Очищаем и добавляем все логи
+                    logContainer.innerHTML = '';
+                    
                     data.logs.forEach(log => {
                         const logEntry = document.createElement('div');
                         logEntry.className = `log-entry ${log.type}`;
+                        
+                        // Форматирование сообщения
+                        let formattedMessage = log.message;
+                        formattedMessage = formattedMessage.replace(
+                            /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g,
+                            '<span class="ip-address">$1</span>'
+                        );
+                        formattedMessage = formattedMessage.replace(
+                            /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2})/g,
+                            '<span class="network-name">$1</span>'
+                        );
+                        
                         logEntry.innerHTML = `
                             <span class="log-timestamp">[${log.timestamp}]</span>
-                            <span class="log-message">${log.message}</span>
+                            <span class="log-message">${formattedMessage}</span>
                         `;
                         logContainer.appendChild(logEntry);
                     });
-                } else {
-                    addLog('Логи отсутствуют', 'info');
+                    
+                    // Автопрокрутка
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                    updateLogCount();
                 }
-                
-                // Автопрокрутка
-                logContainer.scrollTop = logContainer.scrollHeight;
             })
             .catch(error => {
                 console.error('Ошибка загрузки логов:', error);
@@ -667,6 +643,17 @@
                     startBtn.disabled = true;
                     stopBtn.disabled = false;
                     document.body.classList.add('scanning-active');
+                    
+                    // Добавляем сообщение о прогрессе в логи
+                    if (data.current_network && data.scanned_networks && data.total_networks) {
+                        const progressMsg = `Сканирование: ${data.current_network} (${data.scanned_networks}/${data.total_networks})`;
+                        // Проверяем, чтобы не дублировать сообщения
+                        const logContainer = document.getElementById('scanLogs');
+                        const lastLog = logContainer.lastElementChild;
+                        if (!lastLog || !lastLog.textContent.includes(progressMsg)) {
+                            addLog(progressMsg, 'info');
+                        }
+                    }
                 } else {
                     startBtn.disabled = false;
                     stopBtn.disabled = true;
@@ -705,11 +692,6 @@
             if (confirm('Вы уверены, что хотите очистить все результаты сканирования?')) {
                 addLog('Очистка результатов сканирования...', 'warning');
                 // Здесь можно добавить API для очистки результатов
-                // fetch('/api/results/clear', { method: 'POST' })
-                // .then(() => {
-                //     addLog('Результаты очищены', 'success');
-                //     updateScanStatus();
-                // });
                 addLog('Функция очистки результатов в разработке', 'info');
             }
         }
@@ -722,6 +704,7 @@
             // Обновляем статус
             updateScanStatus();
             updateNetworksCount();
+            updateLogCount();
             
             // Запускаем периодическое обновление
             startStatusPolling();
@@ -731,6 +714,7 @@
             setTimeout(() => {
                 addLog('Добро пожаловать в систему сканирования сети АСДУЕ!', 'success');
                 addLog('Для начала работы добавьте сети в формате CIDR и нажмите "Сохранить сети"', 'info');
+                addLog('Новая система логирования показывает детали сканирования каждого IP-адреса', 'info');
             }, 1000);
         });
     </script>

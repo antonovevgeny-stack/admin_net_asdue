@@ -29,8 +29,14 @@ except ImportError as e:
     class DummyScanner:
         def __init__(self):
             self.is_scanning = False
+            self.web_log_callback = None
+            
+        def set_web_log_callback(self, callback):
+            self.web_log_callback = callback
             
         def scan_network(self, network):
+            if self.web_log_callback:
+                self.web_log_callback(f"Заглушка: сканирование сети {network}", 'info')
             print(f"Заглушка: сканирование сети {network}")
             return []
     
@@ -384,6 +390,12 @@ def start_scanning():
     """Функция запуска сканирования (работает в отдельном потоке)"""
     global scan_data
     
+    # Настраиваем callback для логов сканера
+    def scanner_web_log(message, level='info'):
+        add_scan_log(f"[SCANNER] {message}", level)
+    
+    scanner.set_web_log_callback(scanner_web_log)
+    
     # Сброс предыдущих данных
     scan_data['is_scanning'] = True
     scan_data['progress'] = 0
@@ -399,6 +411,7 @@ def start_scanning():
     scan_data['scanned_networks'] = 0
     
     add_scan_log('Начинаем сканирование...', 'info')
+    add_scan_log(f'Всего сетей для сканирования: {len(networks_list)}', 'info')
     
     if not networks_list:
         add_scan_log('Нет сетей для сканирования!', 'error')
@@ -428,6 +441,7 @@ def start_scanning():
         
         try:
             # Используем наш сканер
+            scanner.is_scanning = True
             network_results = scanner.scan_network(network)
             
             all_results.extend(network_results)
@@ -488,7 +502,7 @@ if __name__ == '__main__':
             json.dump(["192.168.1.0/24", "10.0.0.0/24"], f, indent=2)
     
     print("=" * 60)
-    print("АСДУЕ - Веб-сканер сети")
+    print("АСДУЕ - Веб-сканер сети с улучшенным логированием")
     print("=" * 60)
     print(f"Сервер запускается на http://127.0.0.1:5000")
     print("")
@@ -509,6 +523,11 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"  - сканер работает: Нет (ошибка: {e})")
     
+    print("=" * 60)
+    print("Новые возможности:")
+    print("  - Детальное логирование каждого IP-адреса")
+    print("  - Отображение прогресса сканирования")
+    print("  - Логирование в реальном времени в веб-интерфейсе")
     print("=" * 60)
     
     app.run(debug=True, host='0.0.0.0')
